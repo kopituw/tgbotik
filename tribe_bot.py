@@ -119,10 +119,15 @@ def create_teams():
     random.shuffle(tardigrades)
 
     teams.clear()
+    team_number = 1
     while len(axolotls) >= 3 and len(tardigrades) >= 3:
         team = [axolotls.pop(), axolotls.pop(), axolotls.pop(), 
                 tardigrades.pop(), tardigrades.pop(), tardigrades.pop()]
+        # Добавляем номер команды к каждому участнику
+        for member in team:
+            member['team_number'] = team_number
         teams.append(team)
+        team_number += 1
 
 # Рассылка заданий и команд
 async def notify_teams(application):
@@ -133,7 +138,7 @@ async def notify_teams(application):
         for member in team:
             task = random.choice(tasks)
             message = (
-                f"🎉 <b>Твоя команда:</b>\n{team_description}\n\n"
+                f"🎉 <b>Твоя команда #{member['team_number']}:</b>\n{team_description}\n\n"
                 f"🎯 <b>Для поиска команды у тебя есть усложнение:</b> {task}"
             )
             await application.bot.send_message(chat_id=member['chat_id'], text=message, parse_mode='HTML')
@@ -171,6 +176,7 @@ async def start_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🚀 Сформировать команды", callback_data="form_teams")],
         [InlineKeyboardButton("👥 Показать участников", callback_data="show_users")],
+        [InlineKeyboardButton("🏆 Показать команды", callback_data="show_teams")],
         [InlineKeyboardButton("🗑️ Очистить всех", callback_data="clear_users")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -215,6 +221,52 @@ async def admin_button_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                         text=f"📋 Продолжение ({i+1}/{len(message_parts)}):\n\n{part}"
                     )
     
+    elif query.data == "show_teams":
+        if not teams:
+            await query.edit_message_text("Команды еще не сформированы.")
+        else:
+            # Показываем сформированные команды
+            teams_info = []
+            for i, team in enumerate(teams, 1):
+                team_members = "\n".join([
+                    f"  {'🦎' if member['tribe'] == 'Аксолотли' else '🐛'} {member['name']} (@{member['nick']})"
+                    for member in team
+                ])
+                teams_info.append(f"🏆 <b>Команда #{i}:</b>\n{team_members}")
+            
+            teams_text = "\n\n".join(teams_info)
+            
+            # Находим участников без команды
+            team_members = []
+            for team in teams:
+                team_members.extend(team)
+            
+            remaining_users = [user for user in users if user not in team_members]
+            
+            if remaining_users:
+                remaining_list = "\n".join([
+                    f"{'🦎' if user['tribe'] == 'Аксолотли' else '🐛'} {user['name']} (@{user['nick']}) - {user['tribe']}"
+                    for user in remaining_users
+                ])
+                remaining_text = f"\n\n👥 <b>Участники без команды ({len(remaining_users)}):</b>\n{remaining_list}"
+            else:
+                remaining_text = "\n\n✅ Все участники распределены по командам!"
+            
+            full_message = f"🏆 <b>Сформированные команды ({len(teams)}):</b>\n\n{teams_text}{remaining_text}"
+            
+            message_parts = split_message(full_message)
+            
+            if len(message_parts) == 1:
+                await query.edit_message_text(message_parts[0], parse_mode='HTML')
+            else:
+                await query.edit_message_text(message_parts[0], parse_mode='HTML')
+                for i, part in enumerate(message_parts[1:], 1):
+                    await context.application.bot.send_message(
+                        chat_id=ADMIN_CHAT_ID, 
+                        text=f"🏆 Продолжение ({i+1}/{len(message_parts)}):\n\n{part}",
+                        parse_mode='HTML'
+                    )
+    
     elif query.data == "clear_users":
         users.clear()
         teams.clear()
@@ -248,7 +300,7 @@ def main():
 
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("start_admin", start_admin))
-    app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^clear_users$"))
+    app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^show_teams$|^clear_users$"))
 
     print("Бот запущен.")
     
