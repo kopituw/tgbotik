@@ -1,9 +1,9 @@
 services:
-  - type: web
+  - type: worker
     name: tribe-bot
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python tribe_bot.py
     envVars:
       - key: TOKEN
-        value: 7923343199:AAEwlBEeao_UjO3m4jiNZegsP2olsqTwTbg 
+        value: 7923343199:AAH2AXZO-dRS0p8t-a6HHgj_p__ymU33dt8 
