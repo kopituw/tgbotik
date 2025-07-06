@@ -119,8 +119,9 @@ def create_teams():
     random.shuffle(tardigrades)
 
     teams.clear()
-    while len(axolotls) >= 2 and len(tardigrades) >= 2:
-        team = [axolotls.pop(), axolotls.pop(), tardigrades.pop(), tardigrades.pop()]
+    while len(axolotls) >= 3 and len(tardigrades) >= 3:
+        team = [axolotls.pop(), axolotls.pop(), axolotls.pop(), 
+                tardigrades.pop(), tardigrades.pop(), tardigrades.pop()]
         teams.append(team)
 
 # Рассылка заданий и команд
@@ -185,8 +186,8 @@ async def admin_button_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     if query.data == "form_teams":
-        if len(users) < 4:
-            await query.edit_message_text("Недостаточно участников для формирования команд.")
+        if len(users) < 6:
+            await query.edit_message_text("Недостаточно участников для формирования команд. Нужно минимум 6 человек (3 аксолотля + 3 тихоходки).")
         else:
             create_teams()
             await notify_teams(context.application)
