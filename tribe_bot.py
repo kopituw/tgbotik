@@ -284,20 +284,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 def main():
-    # Создаем приложение с обработкой ошибок
     app = ApplicationBuilder().token(TOKEN).build()
-    
-    # Добавляем обработчик ошибок
-    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-        logger.error("Exception while handling an update:", exc_info=context.error)
-        if "Conflict" in str(context.error):
-            logger.info("Conflict detected, restarting bot...")
-            await asyncio.sleep(5)
-            await app.initialize()
-            await app.start()
-            await app.updater.start_polling()
-    
-    app.add_error_handler(error_handler)
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -307,8 +294,6 @@ def main():
             TRIBE: [CallbackQueryHandler(tribe_chosen, pattern=r"^tribe_")],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
-        per_message=False,
-        per_chat=True,
     )
 
     app.add_handler(conv_handler)
@@ -316,16 +301,7 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^show_teams$|^clear_users$"))
 
     print("Бот запущен.")
-    
-    # Запуск с обработкой ошибок
-    try:
-        app.run_polling(drop_pending_updates=True)
-    except Exception as e:
-        logger.error(f"Error starting bot: {e}")
-        if "Conflict" in str(e):
-            logger.info("Restarting due to conflict...")
-            asyncio.sleep(5)
-            main()  # Рекурсивный перезапуск
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
