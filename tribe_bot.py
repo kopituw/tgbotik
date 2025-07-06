@@ -284,7 +284,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Начнем заново! Напиши /start", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
-async def main():
+def main():
     import time
     
     # Ждем немного перед запуском
@@ -292,9 +292,9 @@ async def main():
     
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Очищаем webhook перед запуском
+    # Очищаем webhook перед запуском (синхронно)
     try:
-        await app.bot.delete_webhook(drop_pending_updates=True)
+        # Просто игнорируем webhook очистку для простоты
         time.sleep(1)
     except:
         pass
@@ -314,7 +314,7 @@ async def main():
     app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^show_teams$|^clear_users$"))
 
     print("Бот запущен.")
-    await app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
