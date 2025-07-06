@@ -26,7 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 🔐 Токен от BotFather
-TOKEN = "7923343199:AAEwlBEeao_UjO3m4jiNZegsP2olsqTwTbg"
+TOKEN = "7923343199:AAH2AXZO-dRS0p8t-a6HHgj_p__ymU33dt8"
 
 # 🛡️ Telegram ID администратора
 ADMIN_CHAT_ID = 756605376
