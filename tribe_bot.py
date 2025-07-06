@@ -1,6 +1,7 @@
 import random
 import asyncio
 import logging
+import time
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -284,11 +285,15 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 def main():
+    # Ждем немного перед запуском
+    time.sleep(2)
+    
     app = ApplicationBuilder().token(TOKEN).build()
 
     # Очищаем webhook перед запуском
     try:
         app.bot.delete_webhook(drop_pending_updates=True)
+        time.sleep(1)
     except:
         pass
 
@@ -307,7 +312,7 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^show_teams$|^clear_users$"))
 
     print("Бот запущен.")
-    app.run_polling(drop_pending_updates=True, allowed_updates=[])
+    app.run_polling(drop_pending_updates=True, allowed_updates=[], read_timeout=30, write_timeout=30)
 
 if __name__ == "__main__":
     main()
