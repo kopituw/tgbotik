@@ -1,5 +1,6 @@
 import random
 import asyncio
+import logging
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -15,6 +16,13 @@ from telegram.ext import (
     ConversationHandler,
     filters,
 )
+
+# Настройка логирования
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 # 🔐 Токен от BotFather
 TOKEN = "7923343199:AAEwlBEeao_UjO3m4jiNZegsP2olsqTwTbg"
@@ -212,7 +220,20 @@ async def admin_button_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text("✅ Все участники удалены!")
 
 def main():
+    # Создаем приложение с обработкой ошибок
     app = ApplicationBuilder().token(TOKEN).build()
+    
+    # Добавляем обработчик ошибок
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        logger.error("Exception while handling an update:", exc_info=context.error)
+        if "Conflict" in str(context.error):
+            logger.info("Conflict detected, restarting bot...")
+            await asyncio.sleep(5)
+            await app.initialize()
+            await app.start()
+            await app.updater.start_polling()
+    
+    app.add_error_handler(error_handler)
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -229,7 +250,16 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^clear_users$"))
 
     print("Бот запущен.")
-    app.run_polling()
+    
+    # Запуск с обработкой ошибок
+    try:
+        app.run_polling(drop_pending_updates=True)
+    except Exception as e:
+        logger.error(f"Error starting bot: {e}")
+        if "Conflict" in str(e):
+            logger.info("Restarting due to conflict...")
+            asyncio.sleep(5)
+            main()  # Рекурсивный перезапуск
 
 if __name__ == "__main__":
     main()
