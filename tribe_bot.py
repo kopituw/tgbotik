@@ -59,6 +59,8 @@ NAME, NICK, TRIBE = range(3)
 
 # Старт — спрашиваем имя
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Очищаем старые данные пользователя при новом старте
+    context.user_data.clear()
     await update.message.reply_text("Привет! Как тебя зовут?", reply_markup=ReplyKeyboardRemove())
     return NAME
 
@@ -173,6 +175,9 @@ async def start_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Ты не админ 🙃, ай!")
         return
 
+    # Сбрасываем состояние диалога для админа
+    context.user_data.clear()
+
     keyboard = [
         [InlineKeyboardButton("🚀 Сформировать команды", callback_data="form_teams")],
         [InlineKeyboardButton("👥 Показать участников", callback_data="show_users")],
@@ -272,6 +277,12 @@ async def admin_button_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         teams.clear()
         await query.edit_message_text("✅ Все участники удалены!")
 
+# Fallback функция для сброса состояния
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("Начнем заново! Напиши /start", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+
 def main():
     # Создаем приложение с обработкой ошибок
     app = ApplicationBuilder().token(TOKEN).build()
@@ -295,7 +306,9 @@ def main():
             NICK: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_nick)],
             TRIBE: [CallbackQueryHandler(tribe_chosen, pattern=r"^tribe_")],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler("cancel", cancel)],
+        per_message=False,
+        per_chat=True,
     )
 
     app.add_handler(conv_handler)
