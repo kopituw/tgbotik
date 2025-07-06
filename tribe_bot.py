@@ -292,7 +292,7 @@ def main():
 
     # Очищаем webhook перед запуском
     try:
-        app.bot.delete_webhook(drop_pending_updates=True)
+        asyncio.run(app.bot.delete_webhook(drop_pending_updates=True))
         time.sleep(1)
     except:
         pass
@@ -312,7 +312,7 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^show_teams$|^clear_users$"))
 
     print("Бот запущен.")
-    app.run_polling(drop_pending_updates=True, allowed_updates=[], read_timeout=30, write_timeout=30)
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
