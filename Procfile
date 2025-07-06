@@ -1,0 +1,1 @@
+worker: python tribe_bot.py 
