@@ -2,6 +2,9 @@ import random
 import asyncio
 import logging
 import time
+import os
+from flask import Flask
+from threading import Thread
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -57,6 +60,16 @@ tasks = [
 
 # Состояния диалога
 NAME, NICK, TRIBE = range(3)
+
+# Создаем Flask приложение для health checks
+app = Flask(__name__)
+
+@app.route('/')
+def health_check():
+    return "Bot is running!", 200
+
+def run_flask():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
 
 # Старт — спрашиваем имя
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -286,16 +299,23 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     import time
+    import os
+    
+    # Запускаем Flask сервер в отдельном потоке
+    flask_thread = Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
     
     # Ждем немного перед запуском
-    time.sleep(2)
+    time.sleep(3)
     
-    app = ApplicationBuilder().token(TOKEN).build()
+    telegram_app = ApplicationBuilder().token(TOKEN).build()
 
     # Очищаем webhook перед запуском (синхронно)
     try:
-        # Просто игнорируем webhook очистку для простоты
-        time.sleep(1)
+        # Принудительно очищаем все соединения
+        print("Очищаем старые соединения...")
+        time.sleep(2)
     except:
         pass
 
@@ -309,12 +329,15 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("start_admin", start_admin))
-    app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^show_teams$|^clear_users$"))
+    telegram_app.add_handler(conv_handler)
+    telegram_app.add_handler(CommandHandler("start_admin", start_admin))
+    telegram_app.add_handler(CallbackQueryHandler(admin_button_handler, pattern="^form_teams$|^show_users$|^show_teams$|^clear_users$"))
 
     print("Бот запущен.")
-    app.run_polling(drop_pending_updates=True)
+    print(f"Токен: {TOKEN[:10]}...")
+    
+    # Запускаем с максимальной очисткой
+    telegram_app.run_polling(drop_pending_updates=True, close_loop=False)
 
 if __name__ == "__main__":
     main()
